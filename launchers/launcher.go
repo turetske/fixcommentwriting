@@ -94,6 +94,7 @@ func LaunchModules(ctx context.Context, modules config.ServerType) (context.Canc
 	}
 
 	servers := make([]server_utils.XRootDServer, 0)
+
 	if modules.IsEnabled(config.OriginType) {
 		mode := param.Origin_Mode.GetString()
 		switch mode {
@@ -132,6 +133,20 @@ func LaunchModules(ctx context.Context, modules config.ServerType) (context.Canc
 			if err != nil {
 				return shutdownCancel, err
 			}
+		}
+	}
+
+	if modules.IsEnabled(config.CacheType) {
+		server, err := CacheServe(ctx, engine, egrp)
+		if err != nil {
+			return shutdownCancel, err
+		}
+
+		servers = append(servers, server)
+
+		err = server_utils.WaitUntilWorking(ctx, "Get", param.Origin_Url.GetString()+"/.well-known/openid-configuration", "Cache", http.StatusOK)
+		if err != nil {
+			return shutdownCancel, err
 		}
 	}
 
